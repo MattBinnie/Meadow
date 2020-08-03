@@ -1,0 +1,1 @@
+c:/python/python37-32/python hip.py --file meadow2.jpg --cols 220 --scale 0.5
