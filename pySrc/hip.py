@@ -15,6 +15,12 @@ gScale1 = ".'`^\",:;Il!i><~+_-?][}{1)(|\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@
 # 97 shades of gray
 gScale2 = ".`:,;'_^\"\\></-!~=)(|j?}{ ][ti+l7v1%yrfcJ32uIC$zwo96sngaT5qpkYVOL40&mG8*xhedbZUSAQPFDXWK#RNEHBM@"
 
+gScaleSwitcher = {
+    0 : gScale0,
+    1 : gScale1,
+    2 : gScale2
+}
+
 def getAverageL(image):
     ## Given PIL Image, return average value of grayscale value
 
@@ -31,11 +37,14 @@ def convertImageToAscii(fileName, cols, imScale, asciiDetail):
     ## Given Image and dims (rows, cols) returns an m*n list of Images
   
     # open image and convert to grayscale
-    image = Image.open(fileName).convert('L')
+    image = Image.open(fileName)
+    
+    imGray = image.convert('L')
+    imColor = image.convert('RGB')
 
     # adding some contrast for more appealing pictures
     unsharpenFilter = ImageFilter.UnsharpMask(radius=3, percent=200, threshold=2)
-    image = image.filter(unsharpenFilter)
+    imGray = imGray.filter(unsharpenFilter)
 
     # store dimensions
     pxWidth, pxHeight = image.size[0], image.size[1]
@@ -60,6 +69,11 @@ def convertImageToAscii(fileName, cols, imScale, asciiDetail):
   
     # ascii image is a list of character strings 
     aImg = [] 
+
+    # look up ascii charset
+    gsSet = gScaleSwitcher.get(asciiDetail, gScale0)
+    print("Charset used is %s" % gsSet)
+
     # generate list of dimensions 
     for i in range(rows): 
         y1 = int(i * heigthScale) 
@@ -88,8 +102,6 @@ def convertImageToAscii(fileName, cols, imScale, asciiDetail):
             # get average luminance 
             avg = int(getAverageL(img)) 
   
-            # look up ascii charset
-            gsSet = gScale0
             # get the ascii char
             gsChar = gsSet[int((avg * (len(gsSet) - 1)) / 255)]
   
@@ -99,17 +111,17 @@ def convertImageToAscii(fileName, cols, imScale, asciiDetail):
     # return txt image 
     return aImg 
 
-  
 # main() function 
 def main(): 
     # create parser 
     descStr = "This program converts an image into ASCII art."
     parser = argparse.ArgumentParser(description=descStr) 
+    
     # add expected arguments 
-    parser.add_argument('--file', dest='imgFile', required=True)
-    parser.add_argument('--scale', dest='scale', required=False) 
-    parser.add_argument('--cols', dest='cols', required=False) 
-    parser.add_argument('--details',dest='details', required=False) 
+    parser.add_argument('--file',    dest = 'imgFile', required=True)
+    parser.add_argument('--scale',   dest = 'scale'  , required=False) 
+    parser.add_argument('--cols',    dest = 'cols'   , required=False) 
+    parser.add_argument('--details', dest = 'details', required=False) 
   
     # parse args 
     args = parser.parse_args() 
@@ -132,9 +144,10 @@ def main():
   
     print('generating ASCII art...') 
     # convert image to ascii txt 
-    aimg = convertImageToAscii(imgFile, cols, scale, args.details) 
+    aImg = convertImageToAscii(imgFile, cols, scale, args.details)
+    rgpImg = convertImageToRgb(imgFile, cols, scale)
   
-    for row in aimg:
+    for row in aImg:
         print(row)
 
 # main like a python 
