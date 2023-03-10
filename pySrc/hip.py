@@ -28,12 +28,90 @@ def getAverageL(image):
     im = np.array(image)
 
     # get shape
-    width, heigth = im.shape
+    width, heigth, depth = im.shape
 
     # get average
-    return np.average(im.reshape(width * heigth))
+    return np.average(im.reshape(width * heigth * depth))
 
 def convertImageToAscii(fileName, cols, imScale, asciiDetail):
+    ## Given Image and dims (rows, cols) returns an m*n list of Images
+  
+    # open image and convert to grayscale
+    image = Image.open(fileName)
+    
+    imGray = image.convert('L')
+    imColor = image.convert('RGB')
+
+    # adding some contrast for more appealing pictures
+    unsharpenFilter = ImageFilter.UnsharpMask(radius=3, percent=200, threshold=2)
+    imGray = imGray.filter(unsharpenFilter)
+
+    # store dimensions
+    pxWidth, pxHeight = image.size[0], image.size[1]
+    print("input image dims: %d x %d" % (pxWidth, pxHeight))
+
+    # compute width of tile
+    widthScale = pxWidth/cols
+
+    # compute tile height based on aspect ratio and scale
+    heigthScale = widthScale/imScale
+
+    # compute number of rows
+    rows = int(pxHeight/heigthScale)
+
+    print("cols: %d, rows: %d" % (cols, rows))
+    print("tile dims: %d x %d" % (widthScale, heigthScale))
+
+    # check if image size is too small 
+    if cols > pxWidth or rows > pxHeight: 
+        print("Image too small for specified cols!") 
+        exit(0) 
+  
+    # ascii image is a list of character strings 
+    aImg = [] 
+
+    # look up ascii charset
+    gsSet = gScaleSwitcher.get(asciiDetail, gScale0)
+    print("Charset used is %s" % gsSet)
+
+    # generate list of dimensions 
+    for i in range(rows): 
+        y1 = int(i * heigthScale) 
+        y2 = int((i + 1) * heigthScale) 
+  
+        # correct last tile 
+        if i == rows - 1: 
+            y2 = pxHeight 
+  
+        # append an empty string 
+        aImg.append("") 
+  
+        for j in range(cols): 
+  
+            # crop image to tile 
+            x1 = int(j * widthScale) 
+            x2 = int((j + 1) * widthScale) 
+  
+            # correct last tile 
+            if j == cols - 1: 
+                x2 = pxWidth 
+  
+            # crop image to extract tile 
+            img = image.crop((x1, y1, x2, y2)) 
+  
+            # get average luminance 
+            avg = int(getAverageL(img)) 
+  
+            # get the ascii char
+            gsChar = gsSet[int((avg * (len(gsSet) - 1)) / 255)]
+  
+            # append ascii char to string 
+            aImg[i] += gsChar
+      
+    # return txt image 
+    return aImg 
+
+def convertImageToRgb(fileName, cols, imScale, asciiDetail):
     ## Given Image and dims (rows, cols) returns an m*n list of Images
   
     # open image and convert to grayscale
@@ -145,9 +223,12 @@ def main():
     print('generating ASCII art...') 
     # convert image to ascii txt 
     aImg = convertImageToAscii(imgFile, cols, scale, args.details)
-    rgpImg = convertImageToRgb(imgFile, cols, scale)
+    rgbImg = convertImageToRgb(imgFile, cols, scale, args.details)
   
     for row in aImg:
+        print(row)
+
+    for row in rgbImg:
         print(row)
 
 # main like a python 
